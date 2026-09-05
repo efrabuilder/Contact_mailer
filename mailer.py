@@ -64,25 +64,32 @@ def get_smtp_config() -> dict:
 
 
 def build_message(
-    config: dict, name: str, sender_email: str, body: str, attachment=None
+    config: dict, name: str, sender_email: str, body: str, attachments=None
 ) -> EmailMessage:
     """
     Construye el correo del formulario de contacto con remitente/responder-a
-    bien configurados. Si viene un archivo adjunto (werkzeug FileStorage),
-    lo agrega al mensaje.
+    bien configurados. Si vienen archivos adjuntos (lista de werkzeug
+    FileStorage), los agrega al mensaje.
+
+    Nota: el "From" siempre es la cuenta autenticada (config["user"]), nunca
+    el correo de quien escribe el formulario — los proveedores (Gmail,
+    Outlook) rechazan o reescriben un From que no sea la cuenta autenticada
+    (protección SPF/DKIM/DMARC contra suplantación). Por eso se usa
+    Reply-To: al responder ese correo, la respuesta va directo a quien
+    escribió el mensaje.
     """
     msg = EmailMessage()
     msg["Subject"] = f"Nuevo mensaje de contacto — {name}"
     msg["From"] = formataddr((name, config["user"]))
     msg["To"] = config["receiver"]
-    # Reply-To apunta al correo de quien llenó el formulario, no al buzón emisor.
-    # Reply-To points to the form sender, not the sending mailbox.
     msg["Reply-To"] = sender_email
     msg.set_content(
         f"Nombre: {name}\nCorreo: {sender_email}\n\nMensaje:\n{body}"
     )
 
-    if attachment is not None and attachment.filename:
+    for attachment in attachments or []:
+        if not attachment or not attachment.filename:
+            continue
         content = attachment.read()
         mime_type, _ = mimetypes.guess_type(attachment.filename)
         maintype, subtype = (mime_type or "application/octet-stream").split("/", 1)
@@ -93,13 +100,13 @@ def build_message(
     return msg
 
 
-def send_contact_email(name: str, sender_email: str, body: str, attachment=None) -> str:
+def send_contact_email(name: str, sender_email: str, body: str, attachments=None) -> str:
     """
     Envía el correo del formulario público y regresa un mensaje de éxito.
     Lanza MailError con un mensaje claro si algo falla.
     """
     config = get_smtp_config()
-    message = build_message(config, name, sender_email, body, attachment)
+    message = build_message(config, name, sender_email, body, attachments)
     _deliver(config["host"], config["port"], config["user"], config["password"], message)
     return "Tu mensaje fue enviado correctamente."
 
