@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso administrador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">efraín rojas</a>
+  <div class="topbar-controls">
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+      <span class="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main class="form-section">
+  <form id="login-form" class="contact-card" novalidate>
+    <h2>Iniciar sesión</h2>
+
+    <label for="username">Usuario</label>
+    <input type="text" id="username" name="username" required autocomplete="username">
+
+    <label for="password">Contraseña</label>
+    <input type="password" id="password" name="password" required autocomplete="current-password">
+
+    <button type="submit" id="login-btn">Ingresar</button>
+
+    <div id="login-status" class="status-log" role="status" aria-live="polite"></div>
+  </form>
+</main>
+
+<script src="{{ url_for('static', filename='login.js') }}"></script>
+</body>
+</html>

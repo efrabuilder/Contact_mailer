@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enviar correo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">efraín rojas</a>
+  <div class="topbar-controls">
+    <span class="chip-btn admin-user">{{ admin_user }}</span>
+    <a class="chip-btn" href="{{ url_for('admin_logout') }}">Salir</a>
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+      <span class="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main class="form-section">
+  <form id="send-form" class="contact-card send-card" novalidate enctype="multipart/form-data">
+    <h2>Enviar correo</h2>
+
+    <label for="account_id">Enviar desde</label>
+    <select id="account_id" name="account_id" required>
+      {% if accounts %}
+        {% for account in accounts %}
+          <option value="{{ account.id }}">{{ account.label }}</option>
+        {% endfor %}
+      {% else %}
+        <option value="" disabled selected>No hay cuentas configuradas</option>
+      {% endif %}
+    </select>
+    <span class="field-error" data-for="account_id"></span>
+
+    <label for="recipient-input">Destinatarios</label>
+    <div class="chip-input" id="recipient-chip-input">
+      <div class="chip-list" id="recipient-chips"></div>
+      <input type="text" id="recipient-input" placeholder="correo@ejemplo.com y Enter">
+    </div>
+    <input type="hidden" id="recipients" name="recipients">
+    <span class="field-error" data-for="recipients"></span>
+
+    <label for="subject">Asunto</label>
+    <input type="text" id="subject" name="subject" required>
+    <span class="field-error" data-for="subject"></span>
+
+    <label for="message">Mensaje</label>
+    <textarea id="message" name="message" rows="6" required></textarea>
+    <span class="field-error" data-for="message"></span>
+
+    <label for="attachments">Adjuntar archivos (opcional)</label>
+    <div class="file-input-row">
+      <input type="file" id="attachments" name="attachments" multiple>
+      <span id="file-name" class="file-name">Ningún archivo seleccionado</span>
+    </div>
+    <span class="field-error" data-for="attachments"></span>
+
+    <button type="submit" id="submit-btn">Enviar correo</button>
+
+    <div id="status-log" class="status-log" role="status" aria-live="polite"></div>
+  </form>
+</main>
+
+<script src="{{ url_for('static', filename='send.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efraín Rojas — Contacto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand">efraín rojas</span>
+  <div class="topbar-controls">
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+      <span class="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main class="gate-main">
+  <section class="gate-hero">
+    <h1>¿En qué te puedo ayudar?</h1>
+    <p class="lede">Elegí una opción para continuar.</p>
+
+    <div class="gate-options">
+      <a class="gate-card" href="{{ url_for('contact_page') }}">
+        <span class="gate-card-title">Escribirme un mensaje</span>
+        <span class="gate-card-desc">Dejame tu nombre, tu correo y tu mensaje. Te respondo directo a tu bandeja de entrada.</span>
+      </a>
+    </div>
+
+    <p class="gate-admin-link"><a href="{{ url_for('admin_login') }}">Acceso administrador</a></p>
+  </section>
+</main>
+
+<footer>
+  <p class="copyright">© 2026 All rights reserved · Designed &amp; built by Efraín Sebastián Rojas Artavia</p>
+</footer>
+
+<script src="{{ url_for('static', filename='gate.js') }}"></script>
+</body>
+</html>
