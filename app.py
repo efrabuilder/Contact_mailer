@@ -13,7 +13,6 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 from auth import admin_required, check_credentials, login_admin, logout_admin
 from mailer import MailError, get_smtp_accounts, send_contact_email, send_outgoing_email
 from validators import (
-    validate_attachment,
     validate_attachments,
     validate_contact_form,
     validate_recipients,
@@ -48,14 +47,14 @@ def contact_page() -> str:
 
 @app.route("/api/contact", methods=["POST"])
 def contact() -> tuple:
-    # El formulario viaja como multipart/form-data cuando hay un archivo adjunto.
+    # El formulario viaja como multipart/form-data cuando hay archivos adjuntos.
     data = request.form if request.form else (request.get_json(silent=True) or {})
-    attachment = request.files.get("attachment")
+    attachments = request.files.getlist("attachments")
 
     errors = validate_contact_form(data)
-    attachment_error = validate_attachment(attachment)
-    if attachment_error:
-        errors["attachment"] = attachment_error
+    attachments_error = validate_attachments(attachments)
+    if attachments_error:
+        errors["attachments"] = attachments_error
 
     if errors:
         return jsonify({"success": False, "errors": errors}), 400
@@ -65,7 +64,7 @@ def contact() -> tuple:
             name=data.get("name", "").strip(),
             sender_email=data.get("email", "").strip(),
             body=data.get("message", "").strip(),
-            attachment=attachment if attachment and attachment.filename else None,
+            attachments=[f for f in attachments if f and f.filename],
         )
     except MailError as exc:
         return jsonify({"success": False, "errors": {"server": str(exc)}}), 502
