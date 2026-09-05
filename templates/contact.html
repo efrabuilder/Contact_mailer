@@ -86,12 +86,12 @@
       <textarea id="message" name="message" rows="5" required></textarea>
       <span class="field-error" data-for="message"></span>
 
-      <label for="attachment" data-i18n="label_attachment">Adjuntar archivo (opcional)</label>
+      <label for="attachment" data-i18n="label_attachment">Adjuntar archivos (opcional)</label>
       <div class="file-input-row">
-        <input type="file" id="attachment" name="attachment">
+        <input type="file" id="attachment" name="attachments" multiple>
         <span id="file-name" class="file-name" data-i18n="no_file">Ningún archivo seleccionado</span>
       </div>
-      <span class="field-error" data-for="attachment"></span>
+      <span class="field-error" data-for="attachments"></span>
 
       <button type="submit" id="submit-btn">
         <span data-i18n="btn_send">Enviar mensaje</span>
