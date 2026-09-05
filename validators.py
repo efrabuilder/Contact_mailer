@@ -2,12 +2,14 @@
 Validación del formulario de contacto (server-side).
 Server-side validation for the contact form.
 """
+import os
 import re
 
 EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 NAME_MIN, NAME_MAX = 2, 100
 MESSAGE_MIN, MESSAGE_MAX = 10, 2000
+MAX_ATTACHMENT_MB = 10
 
 
 def validate_contact_form(data: dict) -> dict:
@@ -43,3 +45,23 @@ def validate_contact_form(data: dict) -> dict:
         errors["message"] = f"El mensaje debe tener entre {MESSAGE_MIN} y {MESSAGE_MAX} caracteres."
 
     return errors
+
+
+def validate_attachment(file) -> str:
+    """
+    Revisa el archivo adjunto (opcional). Regresa un mensaje de error o
+    cadena vacía si es válido / hoy no viene ningún archivo.
+    Checks the optional attachment. Returns an error message, or an empty
+    string if it's valid / no file was sent at all.
+    """
+    if file is None or file.filename == "":
+        return ""
+
+    file.stream.seek(0, os.SEEK_END)
+    size_mb = file.stream.tell() / (1024 * 1024)
+    file.stream.seek(0)  # regresa el cursor al inicio / rewind for later use
+
+    if size_mb > MAX_ATTACHMENT_MB:
+        return f"El archivo adjunto no puede superar {MAX_ATTACHMENT_MB} MB."
+
+    return ""
