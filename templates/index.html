@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Mailer — Landing con envío real de correo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand">contact-mailer</span>
+  <div class="topbar-controls">
+    <button id="lang-toggle" class="chip-btn" aria-label="Cambiar idioma">ES / EN</button>
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+      <span class="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <h1 data-i18n="hero_title">Un formulario que de verdad<br>llega a tu bandeja de entrada</h1>
+      <p class="lede" data-i18n="hero_lede">
+        Nada de "gracias por tu mensaje" que se pierde en el vacío. Este formulario valida
+        cada campo en el servidor, se conecta por SMTP a Gmail u Outlook, y te avisa si algo
+        sale mal — con un mensaje que puedas entender.
+      </p>
+      <ul class="feature-list">
+        <li data-i18n="feat_1">Validación real en el servidor, no solo en el navegador</li>
+        <li data-i18n="feat_2">Envío por SMTP a Gmail, Outlook u otro proveedor</li>
+        <li data-i18n="feat_3">Errores de conexión y autenticación manejados uno por uno</li>
+      </ul>
+    </div>
+
+    <div class="pipeline" aria-hidden="true">
+      <svg viewBox="0 0 320 400" class="pipeline-svg">
+        <line x1="160" y1="55" x2="160" y2="345" class="pipeline-track"/>
+        <circle id="pulse-dot" cx="160" cy="55" r="5" class="pipeline-pulse"/>
+
+        <g class="pipeline-node" data-step="0">
+          <circle cx="160" cy="55" r="26"/>
+          <text x="160" y="61" text-anchor="middle" class="node-glyph">✎</text>
+        </g>
+        <text x="200" y="60" class="node-label" data-i18n="step_1">Formulario</text>
+
+        <g class="pipeline-node" data-step="1">
+          <circle cx="160" cy="170" r="26"/>
+          <text x="160" y="176" text-anchor="middle" class="node-glyph">⚙</text>
+        </g>
+        <text x="200" y="175" class="node-label" data-i18n="step_2">Validación</text>
+
+        <g class="pipeline-node" data-step="2">
+          <circle cx="160" cy="285" r="26"/>
+          <text x="160" y="291" text-anchor="middle" class="node-glyph">↻</text>
+        </g>
+        <text x="200" y="290" class="node-label" data-i18n="step_3">Servidor SMTP</text>
+
+        <g class="pipeline-node" data-step="3">
+          <circle cx="160" cy="345" r="20"/>
+          <text x="160" y="350" text-anchor="middle" class="node-glyph">✓</text>
+        </g>
+        <text x="200" y="350" class="node-label" data-i18n="step_4">Tu inbox</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <form id="contact-form" class="contact-card" novalidate>
+      <h2 data-i18n="form_title">Probá el envío</h2>
+
+      <!-- Honeypot anti-spam, oculto para humanos -->
+      <input type="text" name="website" id="website" class="honeypot" tabindex="-1" autocomplete="off">
+
+      <label for="name" data-i18n="label_name">Nombre</label>
+      <input type="text" id="name" name="name" required>
+      <span class="field-error" data-for="name"></span>
+
+      <label for="email" data-i18n="label_email">Correo</label>
+      <input type="email" id="email" name="email" required>
+      <span class="field-error" data-for="email"></span>
+
+      <label for="message" data-i18n="label_message">Mensaje</label>
+      <textarea id="message" name="message" rows="5" required></textarea>
+      <span class="field-error" data-for="message"></span>
+
+      <button type="submit" id="submit-btn">
+        <span data-i18n="btn_send">Enviar mensaje</span>
+      </button>
+
+      <div id="status-log" class="status-log" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+</main>
+
+<footer>
+  <p data-i18n="footer_text">Hecho con Python + Flask + smtplib.</p>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
