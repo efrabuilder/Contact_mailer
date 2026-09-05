@@ -69,7 +69,7 @@
   </section>
 
   <section class="form-section">
-    <form id="contact-form" class="contact-card" novalidate>
+    <form id="contact-form" class="contact-card" novalidate enctype="multipart/form-data">
       <h2 data-i18n="form_title">Probá el envío</h2>
 
       <!-- Honeypot anti-spam, oculto para humanos -->
@@ -87,6 +87,13 @@
       <textarea id="message" name="message" rows="5" required></textarea>
       <span class="field-error" data-for="message"></span>
 
+      <label for="attachment" data-i18n="label_attachment">Adjuntar archivo (opcional)</label>
+      <div class="file-input-row">
+        <input type="file" id="attachment" name="attachment">
+        <span id="file-name" class="file-name" data-i18n="no_file">Ningún archivo seleccionado</span>
+      </div>
+      <span class="field-error" data-for="attachment"></span>
+
       <button type="submit" id="submit-btn">
         <span data-i18n="btn_send">Enviar mensaje</span>
       </button>
@@ -98,6 +105,7 @@
 
 <footer>
   <p data-i18n="footer_text">Hecho con Python + Flask + smtplib.</p>
+  <p class="copyright">© 2026 All rights reserved · Designed &amp; built by Efraín Sebastián Rojas Artavia</p>
 </footer>
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
