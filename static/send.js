@@ -15,7 +15,17 @@ let recipients = [];
 
 function showFieldError(field, text) {
   const errorEl = document.querySelector('.field-error[data-for="' + field + '"]');
-  if (errorEl) errorEl.textContent = text || "";
+  if (errorEl) {
+    errorEl.textContent = text || "";
+    return;
+  }
+  // No hay campo asociado (ej. "server"): mostramos el motivo real en el log.
+  if (text) {
+    const line = document.createElement("div");
+    line.className = "err";
+    line.textContent = text;
+    statusLog.appendChild(line);
+  }
 }
 
 function renderChips() {
