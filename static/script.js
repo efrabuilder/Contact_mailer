@@ -10,11 +10,14 @@ const translations = {
     step_1: "Formulario", step_2: "Validación", step_3: "Servidor SMTP", step_4: "Tu inbox",
     form_title: "Probá el envío",
     label_name: "Nombre", label_email: "Correo", label_message: "Mensaje",
+    label_attachment: "Adjuntar archivo (opcional)",
+    no_file: "Ningún archivo seleccionado",
     btn_send: "Enviar mensaje",
     footer_text: "Hecho con Python + Flask + smtplib.",
     err_name: "El nombre es obligatorio.",
     err_email: "Ingresá un correo válido.",
     err_message: "El mensaje debe tener al menos 10 caracteres.",
+    err_attachment: "El archivo no puede superar 10 MB.",
     log_validating: "Validando campos...",
     log_connecting: "Conectando con el servidor SMTP...",
     log_sending: "Enviando el correo...",
@@ -30,11 +33,14 @@ const translations = {
     step_1: "Form", step_2: "Validation", step_3: "SMTP server", step_4: "Your inbox",
     form_title: "Try sending it",
     label_name: "Name", label_email: "Email", label_message: "Message",
+    label_attachment: "Attach a file (optional)",
+    no_file: "No file selected",
     btn_send: "Send message",
     footer_text: "Built with Python + Flask + smtplib.",
     err_name: "Name is required.",
     err_email: "Enter a valid email address.",
     err_message: "Message must be at least 10 characters.",
+    err_attachment: "The file can't be larger than 10 MB.",
     log_validating: "Validating fields...",
     log_connecting: "Connecting to the SMTP server...",
     log_sending: "Sending the email...",
@@ -123,6 +129,22 @@ function logStatus(key, cssClass) {
   log.appendChild(line);
 }
 
+const MAX_ATTACHMENT_MB = 10;
+const attachmentInput = document.getElementById("attachment");
+const fileNameEl = document.getElementById("file-name");
+
+attachmentInput.addEventListener("change", function () {
+  const file = this.files[0];
+  if (!file) {
+    fileNameEl.textContent = translations[currentLang].no_file;
+    showFieldError("attachment", null);
+    return;
+  }
+  fileNameEl.textContent = file.name;
+  const tooBig = file.size > MAX_ATTACHMENT_MB * 1024 * 1024;
+  showFieldError("attachment", tooBig ? "err_attachment" : null);
+});
+
 const form = document.getElementById("contact-form");
 const submitBtn = document.getElementById("submit-btn");
 
@@ -135,6 +157,7 @@ form.addEventListener("submit", async function (event) {
     message: document.getElementById("message").value,
     website: document.getElementById("website").value
   };
+  const file = attachmentInput.files[0] || null;
 
   let hasError = false;
   ["name", "email", "message"].forEach(function (field) {
@@ -142,6 +165,10 @@ form.addEventListener("submit", async function (event) {
     showFieldError(field, valid ? null : "err_" + field);
     if (!valid) hasError = true;
   });
+  if (file && file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+    showFieldError("attachment", "err_attachment");
+    hasError = true;
+  }
   if (hasError) return;
 
   document.getElementById("status-log").innerHTML = "";
@@ -164,11 +191,16 @@ form.addEventListener("submit", async function (event) {
 
   try {
     logStatus("log_sending");
-    const response = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values)
-    });
+    const formData = new FormData();
+    formData.append("name", values.name);
+    formData.append("email", values.email);
+    formData.append("message", values.message);
+    formData.append("website", values.website);
+    if (file) formData.append("attachment", file);
+
+    // Sin header Content-Type: el navegador arma el boundary del multipart.
+    // No Content-Type header: the browser sets the multipart boundary itself.
+    const response = await fetch("/api/contact", { method: "POST", body: formData });
     const data = await response.json();
 
     if (data.success) {
@@ -176,6 +208,7 @@ form.addEventListener("submit", async function (event) {
       animateStep(3, true);
       logStatus("log_success", "ok");
       form.reset();
+      fileNameEl.textContent = translations[currentLang].no_file;
     } else {
       logStatus("log_fail", "err");
       const errors = data.errors || {};
