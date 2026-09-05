@@ -9,13 +9,13 @@ const translations = {
     step_1: "Tu mensaje", step_2: "Revisión", step_3: "Envío", step_4: "Mi bandeja",
     form_title: "Escribime",
     label_name: "Nombre", label_email: "Correo", label_message: "Mensaje",
-    label_attachment: "Adjuntar archivo (opcional)",
+    label_attachment: "Adjuntar archivos (opcional)",
     no_file: "Ningún archivo seleccionado",
     btn_send: "Enviar mensaje",
     err_name: "El nombre es obligatorio.",
     err_email: "Ingresá un correo válido.",
     err_message: "El mensaje debe tener al menos 10 caracteres.",
-    err_attachment: "El archivo no puede superar 10 MB.",
+    err_attachment: "Revisá el tamaño de los archivos adjuntos.",
     log_validating: "Revisando tu mensaje...",
     log_connecting: "Conectando...",
     log_sending: "Enviando...",
@@ -31,13 +31,13 @@ const translations = {
     step_1: "Your message", step_2: "Review", step_3: "Sending", step_4: "My inbox",
     form_title: "Write to me",
     label_name: "Name", label_email: "Email", label_message: "Message",
-    label_attachment: "Attach a file (optional)",
+    label_attachment: "Attach files (optional)",
     no_file: "No file selected",
     btn_send: "Send message",
     err_name: "Name is required.",
     err_email: "Enter a valid email address.",
     err_message: "Message must be at least 10 characters.",
-    err_attachment: "The file can't be larger than 10 MB.",
+    err_attachment: "Check the attached files' size.",
     log_validating: "Checking your message...",
     log_connecting: "Connecting...",
     log_sending: "Sending...",
@@ -123,19 +123,30 @@ function logStatus(key, cssClass) {
 }
 
 const MAX_ATTACHMENT_MB = 10;
+const MAX_TOTAL_ATTACHMENTS_MB = 20;
 const attachmentInput = document.getElementById("attachment");
 const fileNameEl = document.getElementById("file-name");
 
+function showAttachmentsError(key) {
+  const errorEl = document.querySelector('.field-error[data-for="attachments"]');
+  if (!errorEl) return;
+  errorEl.textContent = key ? translations[currentLang][key] : "";
+}
+
 attachmentInput.addEventListener("change", function () {
-  const file = this.files[0];
-  if (!file) {
+  const files = Array.from(this.files);
+  if (files.length === 0) {
     fileNameEl.textContent = translations[currentLang].no_file;
-    showFieldError("attachment", null);
+    showAttachmentsError(null);
     return;
   }
-  fileNameEl.textContent = file.name;
-  const tooBig = file.size > MAX_ATTACHMENT_MB * 1024 * 1024;
-  showFieldError("attachment", tooBig ? "err_attachment" : null);
+  fileNameEl.textContent = files.length === 1
+    ? files[0].name
+    : files.length + " archivos seleccionados";
+
+  const totalMb = files.reduce(function (sum, f) { return sum + f.size; }, 0) / (1024 * 1024);
+  const anyTooBig = files.some(function (f) { return f.size > MAX_ATTACHMENT_MB * 1024 * 1024; });
+  showAttachmentsError(anyTooBig || totalMb > MAX_TOTAL_ATTACHMENTS_MB ? "err_attachment" : null);
 });
 
 const form = document.getElementById("contact-form");
@@ -150,7 +161,7 @@ form.addEventListener("submit", async function (event) {
     message: document.getElementById("message").value,
     website: document.getElementById("website").value
   };
-  const file = attachmentInput.files[0] || null;
+  const files = Array.from(attachmentInput.files);
 
   let hasError = false;
   ["name", "email", "message"].forEach(function (field) {
@@ -158,8 +169,10 @@ form.addEventListener("submit", async function (event) {
     showFieldError(field, valid ? null : "err_" + field);
     if (!valid) hasError = true;
   });
-  if (file && file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
-    showFieldError("attachment", "err_attachment");
+  const totalMb = files.reduce(function (sum, f) { return sum + f.size; }, 0) / (1024 * 1024);
+  const anyTooBig = files.some(function (f) { return f.size > MAX_ATTACHMENT_MB * 1024 * 1024; });
+  if (anyTooBig || totalMb > MAX_TOTAL_ATTACHMENTS_MB) {
+    showAttachmentsError("err_attachment");
     hasError = true;
   }
   if (hasError) return;
@@ -189,7 +202,7 @@ form.addEventListener("submit", async function (event) {
     formData.append("email", values.email);
     formData.append("message", values.message);
     formData.append("website", values.website);
-    if (file) formData.append("attachment", file);
+    files.forEach(function (f) { formData.append("attachments", f); });
 
     const response = await fetch("/api/contact", { method: "POST", body: formData });
     const data = await response.json();
