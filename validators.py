@@ -53,24 +53,6 @@ def validate_contact_form(data: dict) -> dict:
     return errors
 
 
-def validate_attachment(file) -> str:
-    """
-    Revisa un único archivo adjunto (formulario público). Regresa un mensaje
-    de error o cadena vacía si es válido / no viene ningún archivo.
-    """
-    if file is None or file.filename == "":
-        return ""
-
-    file.stream.seek(0, os.SEEK_END)
-    size_mb = file.stream.tell() / (1024 * 1024)
-    file.stream.seek(0)
-
-    if size_mb > MAX_ATTACHMENT_MB:
-        return f"El archivo adjunto no puede superar {MAX_ATTACHMENT_MB} MB."
-
-    return ""
-
-
 # ---------------------------------------------------------------------------
 # Panel admin
 # Admin panel
@@ -104,8 +86,13 @@ def validate_send_message(message: str) -> str:
     return ""
 
 
+# ---------------------------------------------------------------------------
+# Adjuntos: usada por ambos formularios (uno o varios archivos)
+# Attachments: used by both forms (one or several files)
+# ---------------------------------------------------------------------------
+
 def validate_attachments(files: list) -> str:
-    """Revisa varios archivos adjuntos (panel admin): tamaño individual y total."""
+    """Revisa uno o varios archivos adjuntos: tamaño individual y total."""
     if not files:
         return ""
 
