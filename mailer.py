@@ -5,6 +5,7 @@ servidor SMTP genérico configurado por variables de entorno.
 Sends email via SMTP. Supports Gmail, Outlook/Office365, and any generic
 SMTP server configured through environment variables.
 """
+import mimetypes
 import os
 import smtplib
 import ssl
@@ -52,8 +53,13 @@ def get_smtp_config() -> dict:
     return {"host": host, "port": port, "user": user, "password": password, "receiver": receiver}
 
 
-def build_message(config: dict, name: str, sender_email: str, body: str) -> EmailMessage:
-    """Construye el correo con remitente/responder-a bien configurados."""
+def build_message(
+    config: dict, name: str, sender_email: str, body: str, attachment=None
+) -> EmailMessage:
+    """
+    Construye el correo con remitente/responder-a bien configurados.
+    Si viene un archivo adjunto (werkzeug FileStorage), lo agrega al mensaje.
+    """
     msg = EmailMessage()
     msg["Subject"] = f"Nuevo mensaje de contacto — {name}"
     msg["From"] = formataddr((name, config["user"]))
@@ -64,17 +70,26 @@ def build_message(config: dict, name: str, sender_email: str, body: str) -> Emai
     msg.set_content(
         f"Nombre: {name}\nCorreo: {sender_email}\n\nMensaje:\n{body}"
     )
+
+    if attachment is not None and attachment.filename:
+        content = attachment.read()
+        mime_type, _ = mimetypes.guess_type(attachment.filename)
+        maintype, subtype = (mime_type or "application/octet-stream").split("/", 1)
+        msg.add_attachment(
+            content, maintype=maintype, subtype=subtype, filename=attachment.filename
+        )
+
     return msg
 
 
-def send_contact_email(name: str, sender_email: str, body: str) -> str:
+def send_contact_email(name: str, sender_email: str, body: str, attachment=None) -> str:
     """
     Envía el correo y regresa un mensaje de éxito.
     Sends the email and returns a success message.
     Lanza MailError con un mensaje claro si algo falla.
     """
     config = get_smtp_config()
-    message = build_message(config, name, sender_email, body)
+    message = build_message(config, name, sender_email, body, attachment)
     context = ssl.create_default_context()
 
     try:
