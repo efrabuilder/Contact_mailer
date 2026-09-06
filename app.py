@@ -11,7 +11,15 @@ import secrets
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
-from auth import admin_required, check_credentials, login_admin, logout_admin
+from auth import (
+    admin_required,
+    check_credentials,
+    is_locked_out,
+    login_admin,
+    logout_admin,
+    register_failed_attempt,
+    reset_attempts,
+)
 from graph_mailer import (
     GraphMailError,
     exchange_code_for_tokens,
@@ -21,6 +29,7 @@ from graph_mailer import (
     disconnect as outlook_disconnect_account,
     send_via_outlook,
 )
+import inbox_store
 from mailer import MailError, get_smtp_accounts, send_contact_email, send_outgoing_email
 from validators import (
     validate_attachments,
@@ -69,15 +78,35 @@ def contact() -> tuple:
     if errors:
         return jsonify({"success": False, "errors": errors}), 400
 
+    name = data.get("name", "").strip()
+    sender_email = data.get("email", "").strip()
+    body = data.get("message", "").strip()
+    clean_attachments = [f for f in attachments if f and f.filename]
+
     try:
         result_message = send_contact_email(
-            name=data.get("name", "").strip(),
-            sender_email=data.get("email", "").strip(),
-            body=data.get("message", "").strip(),
-            attachments=[f for f in attachments if f and f.filename],
+            name=name,
+            sender_email=sender_email,
+            body=body,
+            attachments=clean_attachments,
         )
     except MailError as exc:
         return jsonify({"success": False, "errors": {"server": str(exc)}}), 502
+
+    # El correo de aviso ya salió (lo de arriba); guardar en la bandeja es
+    # secundario, así que si Redis falla no le arruinamos el envío al
+    # visitante — solo lo dejamos en el log.
+    try:
+        inbox_store.add_message(
+            name=name,
+            email=sender_email,
+            message=body,
+            attachment_names=[f.filename for f in clean_attachments],
+        )
+    except RuntimeError:
+        logging.getLogger("contact_mailer").warning(
+            "No se pudo guardar el mensaje en la bandeja (Redis no configurado)."
+        )
 
     return jsonify({"success": True, "message": result_message}), 200
 
@@ -91,13 +120,23 @@ def admin_login():
     if request.method == "GET":
         return render_template("login.html")
 
+    locked, seconds_left = is_locked_out()
+    if locked:
+        minutes_left = max(1, seconds_left // 60)
+        return jsonify({
+            "success": False,
+            "error": f"Demasiados intentos fallidos. Probá de nuevo en {minutes_left} minuto(s).",
+        }), 429
+
     username = request.form.get("username", "")
     password = request.form.get("password", "")
 
     if check_credentials(username, password):
+        reset_attempts()
         login_admin(username)
         return jsonify({"success": True}), 200
 
+    register_failed_attempt()
     return jsonify({"success": False, "error": "Usuario o clave incorrectos."}), 401
 
 
@@ -118,7 +157,40 @@ def admin_panel() -> str:
         outlook_configured=outlook_is_configured(),
         outlook_connected=outlook_is_connected(),
         outlook_error=request.args.get("outlook_error"),
+        unread_count=inbox_store.unread_count(),
     )
+
+
+@app.route("/admin/inbox")
+@admin_required
+def admin_inbox() -> str:
+    return render_template(
+        "inbox.html",
+        admin_user=session.get("admin_user", ""),
+        messages=inbox_store.list_messages(),
+        inbox_configured=inbox_store.is_configured(),
+    )
+
+
+@app.route("/admin/inbox/<msg_id>")
+@admin_required
+def admin_inbox_detail(msg_id: str) -> str:
+    message = inbox_store.get_message(msg_id)
+    if not message:
+        return redirect(url_for("admin_inbox"))
+    inbox_store.mark_read(msg_id)
+    return render_template(
+        "inbox_detail.html",
+        admin_user=session.get("admin_user", ""),
+        message=message,
+    )
+
+
+@app.route("/admin/inbox/<msg_id>/delete", methods=["POST"])
+@admin_required
+def admin_inbox_delete(msg_id: str):
+    inbox_store.delete_message(msg_id)
+    return redirect(url_for("admin_inbox"))
 
 
 @app.route("/admin/outlook/connect")
