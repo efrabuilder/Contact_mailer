@@ -6,11 +6,21 @@ App con dos zonas:
 """
 import logging
 import os
+import secrets
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
 from auth import admin_required, check_credentials, login_admin, logout_admin
+from graph_mailer import (
+    GraphMailError,
+    exchange_code_for_tokens,
+    get_authorization_url,
+    is_configured as outlook_is_configured,
+    is_connected as outlook_is_connected,
+    disconnect as outlook_disconnect_account,
+    send_via_outlook,
+)
 from mailer import MailError, get_smtp_accounts, send_contact_email, send_outgoing_email
 from validators import (
     validate_attachments,
@@ -101,7 +111,52 @@ def admin_logout():
 @admin_required
 def admin_panel() -> str:
     accounts = get_smtp_accounts()
-    return render_template("send.html", accounts=accounts, admin_user=session.get("admin_user", ""))
+    return render_template(
+        "send.html",
+        accounts=accounts,
+        admin_user=session.get("admin_user", ""),
+        outlook_configured=outlook_is_configured(),
+        outlook_connected=outlook_is_connected(),
+        outlook_error=request.args.get("outlook_error"),
+    )
+
+
+@app.route("/admin/outlook/connect")
+@admin_required
+def outlook_connect():
+    # "state" evita que alguien mande a la app un callback falso.
+    state = secrets.token_urlsafe(16)
+    session["oauth_state"] = state
+    return redirect(get_authorization_url(state))
+
+
+@app.route("/admin/outlook/callback")
+@admin_required
+def outlook_callback():
+    error_description = request.args.get("error_description")
+    if error_description:
+        return redirect(url_for("admin_panel", outlook_error=error_description))
+
+    state = request.args.get("state")
+    if not state or state != session.pop("oauth_state", None):
+        return redirect(
+            url_for("admin_panel", outlook_error="Sesión de autorización inválida, intentá conectar de nuevo.")
+        )
+
+    code = request.args.get("code")
+    try:
+        exchange_code_for_tokens(code)
+    except GraphMailError as exc:
+        return redirect(url_for("admin_panel", outlook_error=str(exc)))
+
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/outlook/disconnect")
+@admin_required
+def outlook_disconnect():
+    outlook_disconnect_account()
+    return redirect(url_for("admin_panel"))
 
 
 @app.route("/api/send", methods=["POST"])
@@ -138,16 +193,26 @@ def send_mail() -> tuple:
     if errors:
         return jsonify({"success": False, "errors": errors}), 400
 
+    clean_attachments = [f for f in files if f and f.filename]
+
     try:
-        result_message = send_outgoing_email(
-            account_id=account_id,
-            recipients=recipients,
-            subject=subject,
-            body=message,
-            attachments=[f for f in files if f and f.filename],
-            sender_name=session.get("admin_user", ""),
-        )
-    except MailError as exc:
+        if account_id == "outlook":
+            result_message = send_via_outlook(
+                recipients=recipients,
+                subject=subject,
+                body=message,
+                attachments=clean_attachments,
+            )
+        else:
+            result_message = send_outgoing_email(
+                account_id=account_id,
+                recipients=recipients,
+                subject=subject,
+                body=message,
+                attachments=clean_attachments,
+                sender_name=session.get("admin_user", ""),
+            )
+    except (MailError, GraphMailError) as exc:
         return jsonify({"success": False, "errors": {"server": str(exc)}}), 502
 
     return jsonify({"success": True, "message": result_message}), 200
