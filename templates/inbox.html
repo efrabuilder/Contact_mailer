@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bandeja de entrada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">efraín rojas</a>
+  <div class="topbar-controls">
+    <a class="chip-btn" href="{{ url_for('admin_panel') }}">Enviar</a>
+    <span class="chip-btn admin-user">{{ admin_user }}</span>
+    <a class="chip-btn" href="{{ url_for('admin_logout') }}">Salir</a>
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+      <span class="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main class="form-section">
+  <div class="contact-card inbox-card">
+    <h2>Bandeja de entrada</h2>
+
+    {% if not inbox_configured %}
+      <p class="err">La bandeja no está configurada (falta REDIS_URL). Los mensajes nuevos siguen llegando por correo, pero no se guardan acá.</p>
+    {% endif %}
+
+    {% if messages %}
+      <ul class="inbox-list">
+        {% for msg in messages %}
+          <li class="inbox-item {{ 'unread' if not msg.read else '' }}">
+            <a href="{{ url_for('admin_inbox_detail', msg_id=msg.id) }}">
+              <span class="inbox-item-top">
+                <span class="inbox-item-name">{{ msg.name }}</span>
+                <span class="inbox-item-date" data-timestamp="{{ msg.received_at }}"></span>
+              </span>
+              <span class="inbox-item-email">{{ msg.email }}</span>
+              <span class="inbox-item-preview">{{ msg.message[:120] }}{{ '…' if msg.message|length > 120 else '' }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% elif inbox_configured %}
+      <p class="lede">Todavía no llegaron mensajes por el formulario de contacto.</p>
+    {% endif %}
+  </div>
+</main>
+
+<script src="{{ url_for('static', filename='inbox.js') }}"></script>
+</body>
+</html>
