@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mensaje de {{ message.name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">efraín rojas</a>
+  <div class="topbar-controls">
+    <a class="chip-btn" href="{{ url_for('admin_inbox') }}">← Bandeja</a>
+    <a class="chip-btn" href="{{ url_for('admin_panel') }}">Enviar</a>
+    <a class="chip-btn" href="{{ url_for('admin_logout') }}">Salir</a>
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+      <span class="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main class="form-section">
+  <div class="contact-card inbox-detail-card">
+    <h2>{{ message.name }}</h2>
+    <p class="inbox-detail-email">{{ message.email }}</p>
+    <p class="inbox-detail-date" data-timestamp="{{ message.received_at }}"></p>
+
+    <div class="inbox-detail-body">{{ message.message }}</div>
+
+    {% if message.attachments %}
+      <div class="inbox-detail-attachments">
+        <span class="field-error-label">Adjuntos enviados por correo:</span>
+        <ul>
+          {% for filename in message.attachments %}
+            <li>{{ filename }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="inbox-detail-actions">
+      <a class="chip-btn" href="{{ url_for('admin_panel') }}?to={{ message.email | urlencode }}&subject={{ ('Re: mensaje de ' ~ message.name) | urlencode }}">Responder</a>
+      <form method="POST" action="{{ url_for('admin_inbox_delete', msg_id=message.id) }}" id="delete-form">
+        <button type="submit" class="chip-btn danger">Eliminar</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<script src="{{ url_for('static', filename='inbox.js') }}"></script>
+</body>
+</html>
