@@ -425,6 +425,99 @@ footer .copyright {
 .outlook-status p { margin: 0.2rem 0; }
 .outlook-status a { color: var(--accent-purple); }
 
+/* Badge de no leídos (link "Bandeja" en el panel admin) */
+.unread-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  background: var(--accent-orange);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.05rem 0.45rem;
+}
+
+/* Bandeja de entrada: listado */
+.inbox-card, .inbox-detail-card { max-width: 640px; }
+
+.inbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.inbox-item a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  transition: border-color 0.2s ease;
+}
+
+.inbox-item a:hover { border-color: var(--accent-purple); }
+
+.inbox-item.unread a { border-color: var(--accent-orange); }
+
+.inbox-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.inbox-item-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.inbox-item.unread .inbox-item-name::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  margin-right: 0.45rem;
+}
+
+.inbox-item-date { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+.inbox-item-email { color: var(--muted); font-size: 0.85rem; }
+.inbox-item-preview { font-size: 0.88rem; opacity: 0.85; }
+
+/* Bandeja de entrada: detalle */
+.inbox-detail-email { color: var(--muted); margin: 0 0 0.1rem; }
+.inbox-detail-date { color: var(--muted); font-size: 0.8rem; margin: 0 0 1.2rem; }
+
+.inbox-detail-body {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.2rem;
+}
+
+.inbox-detail-attachments {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1.2rem;
+}
+
+.inbox-detail-attachments ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
+
+.field-error-label { display: block; margin-bottom: 0.1rem; }
+
+.inbox-detail-actions { display: flex; gap: 0.6rem; }
+
+.chip-btn.danger { color: var(--error); border-color: var(--error); }
+
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; }
   .pipeline { order: -1; max-width: 220px; margin: 0 auto; }
