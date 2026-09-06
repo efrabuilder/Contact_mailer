@@ -13,6 +13,10 @@
 <header class="topbar">
   <a class="brand" href="{{ url_for('index') }}">efraín rojas</a>
   <div class="topbar-controls">
+    <a class="chip-btn" href="{{ url_for('admin_inbox') }}">
+      Bandeja
+      {% if unread_count %}<span class="unread-badge">{{ unread_count }}</span>{% endif %}
+    </a>
     <span class="chip-btn admin-user">{{ admin_user }}</span>
     <a class="chip-btn" href="{{ url_for('admin_logout') }}">Salir</a>
     <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
