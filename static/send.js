@@ -78,6 +78,17 @@ recipientInput.addEventListener("blur", function () {
   }
 });
 
+// Prellenar destinatario/asunto al venir del botón "Responder" de la bandeja.
+const prefillParams = new URLSearchParams(window.location.search);
+const prefillTo = prefillParams.get("to");
+const prefillSubject = prefillParams.get("subject");
+if (prefillTo) {
+  addRecipient(prefillTo);
+}
+if (prefillSubject) {
+  document.getElementById("subject").value = prefillSubject;
+}
+
 const attachmentsInput = document.getElementById("attachments");
 const fileNameEl = document.getElementById("file-name");
 
