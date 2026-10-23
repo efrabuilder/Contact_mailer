@@ -1,19 +1,36 @@
+
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Efraín Rojas — Contacto</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <header class="topbar">
   <span class="brand">efraín rojas</span>
+
   <div class="topbar-controls">
-    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+    <button
+      id="lang-toggle"
+      class="chip-btn"
+      type="button"
+      aria-label="Cambiar idioma"
+    >ES / EN</button>
+
+    <button
+      id="theme-toggle"
+      class="chip-btn"
+      type="button"
+      aria-label="Cambiar tema"
+    >
       <span class="theme-icon">☾</span>
     </button>
   </div>
@@ -21,22 +38,88 @@
 
 <main class="gate-main">
   <section class="gate-hero">
-    <h1>¿En qué te puedo ayudar?</h1>
-    <p class="lede">¡Hablemos!</p>
+
+    <h1 data-i18n="hero_title">
+      ¿En qué te puedo ayudar?
+    </h1>
+
+    <p class="lede" data-i18n="hero_lede">
+      ¡Hablemos!
+    </p>
 
     <div class="gate-options">
       <a class="gate-card" href="{{ url_for('contact_page') }}">
-        <span class="gate-card-title">Escribeme un mensaje</span>
-        <span class="gate-card-desc">Dejame tu nombre, tu correo y tu mensaje. Te respondo directo a tu bandeja de entrada.</span>
+
+        <span class="gate-card-title" data-i18n="card_title">
+          Escríbeme un mensaje
+        </span>
+
+        <span class="gate-card-desc" data-i18n="card_desc">
+          Déjame tu nombre, tu correo y tu mensaje. Te respondo directo a tu bandeja de entrada.
+        </span>
+
       </a>
     </div>
+
   </section>
 </main>
 
 <footer>
-  <p class="copyright">© 2026 All rights reserved · Designed &amp; built by Efraín Sebastián Rojas Artavia</p>
+  <p class="copyright">
+    © 2026 All rights reserved · Designed &amp; built by Efraín Sebastián Rojas Artavia
+  </p>
 </footer>
 
 <script src="{{ url_for('static', filename='gate.js') }}"></script>
+
+<script>
+  const gateTranslations = {
+    es: {
+      hero_title: "¿En qué te puedo ayudar?",
+      hero_lede: "¡Hablemos!",
+      card_title: "Escríbeme un mensaje",
+      card_desc: "Déjame tu nombre, tu correo y tu mensaje. Te respondo directo a tu bandeja de entrada.",
+      lang_label: "Cambiar idioma"
+    },
+
+    en: {
+      hero_title: "How can I help you?",
+      hero_lede: "Let's talk!",
+      card_title: "Send me a message",
+      card_desc: "Leave your name, email, and message. I'll reply directly to your inbox.",
+      lang_label: "Change language"
+    }
+  };
+
+  let currentLang = "es";
+
+  const langToggle = document.getElementById("lang-toggle");
+
+  function applyLanguage(lang) {
+    currentLang = lang;
+
+    document.documentElement.lang = lang;
+
+    document.querySelectorAll("[data-i18n]").forEach(function(element) {
+      const key = element.getAttribute("data-i18n");
+
+      if (gateTranslations[lang][key]) {
+        element.textContent = gateTranslations[lang][key];
+      }
+    });
+
+    langToggle.textContent = lang === "es" ? "ES / EN" : "EN / ES";
+
+    langToggle.setAttribute(
+      "aria-label",
+      gateTranslations[lang].lang_label
+    );
+  }
+
+  langToggle.addEventListener("click", function() {
+    applyLanguage(currentLang === "es" ? "en" : "es");
+  });
+</script>
+
 </body>
 </html>
