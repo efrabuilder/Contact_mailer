@@ -3,7 +3,9 @@ Autenticación simple del panel admin, basada en sesión de Flask, con
 límite de intentos de login (protección básica contra fuerza bruta).
 Simple session-based auth for the admin panel, with login rate limiting.
 """
+import logging
 import os
+import time
 from functools import wraps
 
 from flask import redirect, request, session, url_for
@@ -32,6 +34,24 @@ ATTEMPTS_KEY_PREFIX = "contact_mailer:login_attempts:"
 LOCKOUT_KEY_PREFIX = "contact_mailer:login_lockout:"
 
 _client = None
+_log = logging.getLogger("contact_mailer")
+
+
+def _redis_call(fn, default=None):
+    """
+    Ejecuta una operación de Redis con 3 intentos. Si Redis sigue fallando
+    (p. ej. 'Errno 16 Device or resource busy' transitorio al resolver DNS
+    en Vercel), NO tumba el login: registra el error y regresa `default`
+    (fail-open, igual que cuando REDIS_URL no está configurada).
+    """
+    for attempt in range(3):
+        try:
+            return fn()
+        except (OSError, redis.exceptions.RedisError) as exc:
+            if attempt == 2:
+                _log.warning("Redis no disponible en el límite de login: %s", exc)
+                return default
+            time.sleep(0.2 * (attempt + 1))
 
 
 def _get_client():
@@ -42,7 +62,12 @@ def _get_client():
         redis_url = os.environ.get("REDIS_URL", "")
         if not redis_url:
             return None
-        _client = redis.from_url(redis_url, decode_responses=True)
+        _client = redis.from_url(
+            redis_url,
+            decode_responses=True,
+            socket_connect_timeout=3,
+            socket_timeout=3,
+        )
     return _client
 
 
@@ -65,7 +90,7 @@ def is_locked_out() -> tuple:
         return False, 0
 
     lockout_key = LOCKOUT_KEY_PREFIX + _client_identifier()
-    ttl = client.ttl(lockout_key)
+    ttl = _redis_call(lambda: client.ttl(lockout_key), 0)
     if ttl and ttl > 0:
         return True, ttl
     return False, 0
@@ -78,21 +103,22 @@ def register_failed_attempt() -> None:
 
     identifier = _client_identifier()
     attempts_key = ATTEMPTS_KEY_PREFIX + identifier
-    attempts = client.incr(attempts_key)
+    attempts = _redis_call(lambda: client.incr(attempts_key), 0)
     if attempts == 1:
-        client.expire(attempts_key, ATTEMPTS_WINDOW_SECONDS)
+        _redis_call(lambda: client.expire(attempts_key, ATTEMPTS_WINDOW_SECONDS))
 
     if attempts >= MAX_FAILED_ATTEMPTS:
         lockout_key = LOCKOUT_KEY_PREFIX + identifier
-        client.set(lockout_key, "1", ex=LOCKOUT_SECONDS)
-        client.delete(attempts_key)
+        _redis_call(lambda: client.set(lockout_key, "1", ex=LOCKOUT_SECONDS))
+        _redis_call(lambda: client.delete(attempts_key))
 
 
 def reset_attempts() -> None:
     client = _get_client()
     if client is None:
         return
-    client.delete(ATTEMPTS_KEY_PREFIX + _client_identifier())
+    key = ATTEMPTS_KEY_PREFIX + _client_identifier()
+    _redis_call(lambda: client.delete(key))
 
 
 def check_credentials(username: str, password: str) -> bool:
