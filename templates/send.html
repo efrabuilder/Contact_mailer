@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enviar correo</title>
+<title data-i18n="title">Enviar correo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -14,12 +14,13 @@
   <a class="brand" href="{{ url_for('index') }}">efra.builder</a>
   <div class="topbar-controls">
     <a class="chip-btn" href="{{ url_for('admin_inbox') }}">
-      Bandeja
+      <span data-i18n="nav_inbox">Bandeja</span>
       {% if unread_count %}<span class="unread-badge">{{ unread_count }}</span>{% endif %}
     </a>
     <span class="chip-btn admin-user">{{ admin_user }}</span>
-    <a class="chip-btn" href="{{ url_for('admin_logout') }}">Salir</a>
-    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema">
+    <a class="chip-btn" href="{{ url_for('admin_logout') }}" data-i18n="logout">Salir</a>
+    <button id="lang-toggle" class="chip-btn" type="button" aria-label="Cambiar idioma">ES / EN</button>
+    <button id="theme-toggle" class="chip-btn" aria-label="Cambiar tema" data-i18n-aria="theme_label">
       <span class="theme-icon">☾</span>
     </button>
   </div>
@@ -27,22 +28,22 @@
 
 <main class="form-section">
   <form id="send-form" class="contact-card send-card" novalidate enctype="multipart/form-data">
-    <h2>Enviar correo</h2>
+    <h2 data-i18n="heading">Enviar correo</h2>
 
     {% if outlook_configured %}
     <div class="outlook-status">
       {% if outlook_error %}
-        <p class="err">No se pudo conectar Outlook: {{ outlook_error }}</p>
+        <p class="err" data-i18n="outlook_error" data-v-error="{{ outlook_error }}">No se pudo conectar Outlook: {{ outlook_error }}</p>
       {% endif %}
       {% if outlook_connected %}
-        <p class="ok">Outlook conectado. <a href="{{ url_for('outlook_disconnect') }}">Desconectar</a></p>
+        <p class="ok"><span data-i18n="outlook_connected">Outlook conectado.</span> <a href="{{ url_for('outlook_disconnect') }}" data-i18n="outlook_disconnect">Desconectar</a></p>
       {% else %}
-        <p><a href="{{ url_for('outlook_connect') }}">Conectar cuenta de Outlook</a></p>
+        <p><a href="{{ url_for('outlook_connect') }}" data-i18n="outlook_connect">Conectar cuenta de Outlook</a></p>
       {% endif %}
     </div>
     {% endif %}
 
-    <label for="account_id">Enviar desde</label>
+    <label for="account_id" data-i18n="label_from">Enviar desde</label>
     <select id="account_id" name="account_id" required>
       {% for account in accounts %}
         <option value="{{ account.id }}">{{ account.label }}</option>
@@ -51,40 +52,41 @@
         <option value="outlook">Outlook (Microsoft Graph)</option>
       {% endif %}
       {% if not accounts and not outlook_connected %}
-        <option value="" disabled selected>No hay cuentas configuradas</option>
+        <option value="" disabled selected data-i18n="no_accounts">No hay cuentas configuradas</option>
       {% endif %}
     </select>
     <span class="field-error" data-for="account_id"></span>
 
-    <label for="recipient-input">Destinatarios</label>
+    <label for="recipient-input" data-i18n="label_to">Destinatarios</label>
     <div class="chip-input" id="recipient-chip-input">
       <div class="chip-list" id="recipient-chips"></div>
-      <input type="text" id="recipient-input" placeholder="correo@ejemplo.com y Enter">
+      <input type="text" id="recipient-input" placeholder="correo@ejemplo.com y Enter" data-i18n-placeholder="ph_to">
     </div>
     <input type="hidden" id="recipients" name="recipients">
     <span class="field-error" data-for="recipients"></span>
 
-    <label for="subject">Asunto</label>
+    <label for="subject" data-i18n="label_subject">Asunto</label>
     <input type="text" id="subject" name="subject" required>
     <span class="field-error" data-for="subject"></span>
 
-    <label for="message">Mensaje</label>
+    <label for="message" data-i18n="label_message">Mensaje</label>
     <textarea id="message" name="message" rows="6" required></textarea>
     <span class="field-error" data-for="message"></span>
 
-    <label for="attachments">Adjuntar archivos (opcional)</label>
+    <label for="attachments" data-i18n="label_attachments">Adjuntar archivos (opcional)</label>
     <div class="file-input-row">
       <input type="file" id="attachments" name="attachments" multiple>
-      <span id="file-name" class="file-name">Ningún archivo seleccionado</span>
+      <span id="file-name" class="file-name" data-i18n="no_file">Ningún archivo seleccionado</span>
     </div>
     <span class="field-error" data-for="attachments"></span>
 
-    <button type="submit" id="submit-btn">Enviar correo</button>
+    <button type="submit" id="submit-btn" data-i18n="btn_send">Enviar correo</button>
 
     <div id="status-log" class="status-log" role="status" aria-live="polite"></div>
   </form>
 </main>
 
+<script src="{{ url_for('static', filename='i18n.js') }}"></script>
 <script src="{{ url_for('static', filename='send.js') }}"></script>
 </body>
 </html>
