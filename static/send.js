@@ -38,7 +38,7 @@ function renderChips() {
     remove.type = "button";
     remove.className = "chip-remove";
     remove.textContent = "×";
-    remove.setAttribute("aria-label", "Quitar " + email);
+    remove.setAttribute("aria-label", I18N.t("remove", { email: email }));
     remove.addEventListener("click", function () {
       recipients.splice(index, 1);
       renderChips();
@@ -53,7 +53,7 @@ function addRecipient(value) {
   const email = value.trim().replace(/,$/, "");
   if (!email) return;
   if (!EMAIL_PATTERN.test(email)) {
-    showFieldError("recipients", '"' + email + '" no es un correo válido.');
+    showFieldError("recipients", I18N.t("invalid_email", { email: email }));
     return;
   }
   if (!recipients.includes(email)) {
@@ -92,16 +92,18 @@ if (prefillSubject) {
 const attachmentsInput = document.getElementById("attachments");
 const fileNameEl = document.getElementById("file-name");
 
-attachmentsInput.addEventListener("change", function () {
-  const files = Array.from(this.files);
+function updateFileName() {
+  const files = Array.from(attachmentsInput.files || []);
   if (files.length === 0) {
-    fileNameEl.textContent = "Ningún archivo seleccionado";
+    fileNameEl.textContent = I18N.t("no_file");
   } else if (files.length === 1) {
     fileNameEl.textContent = files[0].name;
   } else {
-    fileNameEl.textContent = files.length + " archivos seleccionados";
+    fileNameEl.textContent = I18N.t("files_selected", { n: files.length });
   }
-});
+}
+
+attachmentsInput.addEventListener("change", updateFileName);
 
 const form = document.getElementById("send-form");
 const submitBtn = document.getElementById("submit-btn");
@@ -114,12 +116,12 @@ form.addEventListener("submit", async function (event) {
   statusLog.innerHTML = "";
 
   if (recipients.length === 0) {
-    showFieldError("recipients", "Agregá al menos un destinatario.");
+    showFieldError("recipients", I18N.t("need_recipient"));
     return;
   }
 
   submitBtn.disabled = true;
-  statusLog.textContent = "Enviando...";
+  statusLog.textContent = I18N.t("sending");
 
   const formData = new FormData(form);
   formData.set("recipients", recipients.join(","));
@@ -129,21 +131,58 @@ form.addEventListener("submit", async function (event) {
     const data = await response.json();
 
     if (data.success) {
-      statusLog.innerHTML = '<div class="ok">Correo enviado correctamente.</div>';
+      statusLog.innerHTML = '<div class="ok">' + I18N.t("sent_ok") + '</div>';
       form.reset();
       recipients = [];
       renderChips();
-      fileNameEl.textContent = "Ningún archivo seleccionado";
+      updateFileName();
     } else {
-      statusLog.innerHTML = '<div class="err">No se pudo enviar el correo.</div>';
+      statusLog.innerHTML = '<div class="err">' + I18N.t("send_failed") + '</div>';
       const errors = data.errors || {};
       Object.keys(errors).forEach(function (field) {
-        showFieldError(field, errors[field]);
+        showFieldError(field, I18N.server(errors[field]));
       });
     }
   } catch (err) {
-    statusLog.innerHTML = '<div class="err">No se pudo conectar con el servidor.</div>';
+    statusLog.innerHTML = '<div class="err">' + I18N.t("server_unreachable") + '</div>';
   } finally {
     submitBtn.disabled = false;
   }
+});
+
+I18N.init({
+  es: {
+    title: "Enviar correo", heading: "Enviar correo", nav_inbox: "Bandeja",
+    outlook_error: "No se pudo conectar Outlook: {error}",
+    outlook_connected: "Outlook conectado.", outlook_disconnect: "Desconectar",
+    outlook_connect: "Conectar cuenta de Outlook",
+    label_from: "Enviar desde", no_accounts: "No hay cuentas configuradas",
+    label_to: "Destinatarios", ph_to: "correo@ejemplo.com y Enter",
+    label_subject: "Asunto", label_message: "Mensaje",
+    label_attachments: "Adjuntar archivos (opcional)",
+    no_file: "Ningún archivo seleccionado", files_selected: "{n} archivos seleccionados",
+    btn_send: "Enviar correo", sending: "Enviando...",
+    sent_ok: "Correo enviado correctamente.", send_failed: "No se pudo enviar el correo.",
+    remove: "Quitar {email}", invalid_email: '"{email}" no es un correo válido.',
+    need_recipient: "Agregá al menos un destinatario."
+  },
+  en: {
+    title: "Send email", heading: "Send email", nav_inbox: "Inbox",
+    outlook_error: "Could not connect Outlook: {error}",
+    outlook_connected: "Outlook connected.", outlook_disconnect: "Disconnect",
+    outlook_connect: "Connect Outlook account",
+    label_from: "Send from", no_accounts: "No accounts configured",
+    label_to: "Recipients", ph_to: "email@example.com and Enter",
+    label_subject: "Subject", label_message: "Message",
+    label_attachments: "Attach files (optional)",
+    no_file: "No file selected", files_selected: "{n} files selected",
+    btn_send: "Send email", sending: "Sending...",
+    sent_ok: "Email sent successfully.", send_failed: "Could not send the email.",
+    remove: "Remove {email}", invalid_email: '"{email}" is not a valid email.',
+    need_recipient: "Add at least one recipient."
+  }
+}, function () {
+  // El texto de "ningún archivo" depende del estado actual del input.
+  if (typeof updateFileName === "function") updateFileName();
+  if (typeof renderChips === "function") renderChips();
 });
