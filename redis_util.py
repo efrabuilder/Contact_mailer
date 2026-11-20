@@ -34,15 +34,15 @@ def get_client():
 
 def call(fn, default=None, raise_on_fail=False):
     """
-    Ejecuta fn() con 3 intentos. Si sigue fallando: lanza RuntimeError
+    Ejecuta fn() con 4 intentos. Si sigue fallando: lanza RuntimeError
     (raise_on_fail=True, para escrituras) o regresa `default` (lecturas,
     fail-soft para no tumbar la página con un 500).
     """
-    for attempt in range(3):
+    for attempt in range(4):
         try:
             return fn()
         except (OSError, redis.exceptions.RedisError) as exc:
-            if attempt == 2:
+            if attempt == 3:
                 _log.warning("Redis no disponible: %s", exc)
                 if raise_on_fail:
                     raise RuntimeError(f"Redis no disponible: {exc}") from exc
