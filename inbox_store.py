@@ -12,30 +12,14 @@ archivos binarios en Redis infla rápido el plan gratuito y no hace
 falta para revisar mensajes desde el panel.
 """
 import json
-import os
 import time
 import uuid
 
-import redis
+from redis_util import call, get_client, is_configured  # noqa: F401
 
 INDEX_KEY = "contact_mailer:inbox:index"
 MESSAGE_KEY_PREFIX = "contact_mailer:inbox:msg:"
 
-_client = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        redis_url = os.environ.get("REDIS_URL", "")
-        if not redis_url:
-            return None
-        _client = redis.from_url(redis_url, decode_responses=True)
-    return _client
-
-
-def is_configured() -> bool:
-    return bool(os.environ.get("REDIS_URL", ""))
 
 
 def add_message(name: str, email: str, message: str, attachment_names: list = None) -> str:
@@ -44,7 +28,7 @@ def add_message(name: str, email: str, message: str, attachment_names: list = No
     lanza RuntimeError (el llamador decide si eso debe frenar el request
     o solo quedar en el log, ya que el correo de aviso es lo prioritario).
     """
-    client = _get_client()
+    client = get_client()
     if client is None:
         raise RuntimeError("REDIS_URL no está configurada: no se puede guardar en la bandeja.")
 
@@ -59,66 +43,65 @@ def add_message(name: str, email: str, message: str, attachment_names: list = No
         "received_at": received_at,
         "read": False,
     }
-    client.set(MESSAGE_KEY_PREFIX + msg_id, json.dumps(record))
-    client.zadd(INDEX_KEY, {msg_id: received_at})
+    call(lambda: client.set(MESSAGE_KEY_PREFIX + msg_id, json.dumps(record)), raise_on_fail=True)
+    call(lambda: client.zadd(INDEX_KEY, {msg_id: received_at}), raise_on_fail=True)
     return msg_id
 
 
 def list_messages() -> list:
     """Todos los mensajes, del más reciente al más antiguo."""
-    client = _get_client()
+    client = get_client()
     if client is None:
         return []
 
-    ids = client.zrevrange(INDEX_KEY, 0, -1)
+    ids = call(lambda: client.zrevrange(INDEX_KEY, 0, -1), [])
     if not ids:
         return []
 
     keys = [MESSAGE_KEY_PREFIX + msg_id for msg_id in ids]
-    raw_records = client.mget(keys)
+    raw_records = call(lambda: client.mget(keys), [None] * len(keys))
 
     messages = []
     for msg_id, raw in zip(ids, raw_records):
         if raw is None:
-            # El registro se borró pero quedó huérfano en el índice: limpiamos.
-            client.zrem(INDEX_KEY, msg_id)
+            # El registro se borró (o Redis falló): lo omitimos sin tocar el índice.
             continue
         messages.append(json.loads(raw))
     return messages
 
 
 def get_message(msg_id: str) -> dict:
-    client = _get_client()
+    client = get_client()
     if client is None:
         return {}
-    raw = client.get(MESSAGE_KEY_PREFIX + msg_id)
+    raw = call(lambda: client.get(MESSAGE_KEY_PREFIX + msg_id))
     return json.loads(raw) if raw else {}
 
 
 def mark_read(msg_id: str) -> None:
-    client = _get_client()
+    client = get_client()
     if client is None:
         return
     key = MESSAGE_KEY_PREFIX + msg_id
-    raw = client.get(key)
+    raw = call(lambda: client.get(key))
     if not raw:
         return
     record = json.loads(raw)
     if not record.get("read"):
         record["read"] = True
-        client.set(key, json.dumps(record))
+        call(lambda: client.set(key, json.dumps(record)))
 
 
 def delete_message(msg_id: str) -> None:
-    client = _get_client()
+    client = get_client()
     if client is None:
         return
-    client.delete(MESSAGE_KEY_PREFIX + msg_id)
-    client.zrem(INDEX_KEY, msg_id)
+    call(lambda: client.delete(MESSAGE_KEY_PREFIX + msg_id))
+    call(lambda: client.zrem(INDEX_KEY, msg_id))
 
 
 def unread_count() -> int:
-    client = _get_client()
+    client = get_client()
     if client is None:
         return 0
     count = 0
