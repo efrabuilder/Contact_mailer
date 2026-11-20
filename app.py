@@ -220,6 +220,14 @@ def outlook_callback():
         exchange_code_for_tokens(code)
     except GraphMailError as exc:
         return redirect(url_for("admin_panel", outlook_error=str(exc)))
+    except Exception as exc:  # noqa: BLE001 - Redis/red caídos: avisar en vez de 500
+        logging.getLogger("contact_mailer").error("Fallo al conectar Outlook: %s", exc)
+        return redirect(
+            url_for(
+                "admin_panel",
+                outlook_error="No se pudo guardar la conexión (Redis no respondió). Intentá conectar de nuevo.",
+            )
+        )
 
     return redirect(url_for("admin_panel"))
 
@@ -286,9 +294,16 @@ def send_mail() -> tuple:
             )
     except (MailError, GraphMailError) as exc:
         return jsonify({"success": False, "errors": {"server": str(exc)}}), 502
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger("contact_mailer").error("Error inesperado al enviar: %s", exc)
+        return jsonify({"success": False, "errors": {"server": "Error temporal del servidor. Intentá de nuevo."}}), 502
 
     return jsonify({"success": True, "message": result_message}), 200
 
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG") == "1")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
