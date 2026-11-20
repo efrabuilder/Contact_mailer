@@ -103,9 +103,9 @@ def contact() -> tuple:
             message=body,
             attachment_names=[f.filename for f in clean_attachments],
         )
-    except RuntimeError:
+    except Exception as exc:  # noqa: BLE001 - nunca romper el envío por la bandeja
         logging.getLogger("contact_mailer").warning(
-            "No se pudo guardar el mensaje en la bandeja (Redis no configurado)."
+            "No se pudo guardar el mensaje en la bandeja: %s", exc
         )
 
     return jsonify({"success": True, "message": result_message}), 200
