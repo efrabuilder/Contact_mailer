@@ -125,7 +125,10 @@ def _get_access_token() -> str:
     # o la próxima renovación va a fallar.
     new_refresh_token = tokens.get("refresh_token")
     if new_refresh_token:
-        save_refresh_token(new_refresh_token)
+        try:
+            save_refresh_token(new_refresh_token)
+        except RuntimeError:
+            pass  # el access_token sirve igual; el token anterior sigue guardado
 
     return tokens["access_token"]
 
